@@ -2,49 +2,88 @@
 import { createMachine } from 'xstate';
 
 const passwordResetMachine = createMachine({
-  id: 'passwordReset',
-  initial: 'idle',
+  id: 'accountRecovery',
+  type: 'parallel',
   states: {
-    idle: {
-      on: {
-        REQUEST_RESET: 'validatingEmail'
+    passwordReset: {
+      initial: 'idle',
+      states: {
+        idle: {
+          on: {
+            REQUEST_PASSWORD_RESET: 'validatingEmail'
+          }
+        },
+        validatingEmail: {
+          on: {
+            EMAIL_VALID: 'sendingResetLink',
+            EMAIL_INVALID: 'error'
+          }
+        },
+        sendingResetLink: {
+          on: {
+            LINK_SENT: 'awaitingPasswordReset',
+            LINK_SEND_FAILED: 'error'
+          }
+        },
+        awaitingPasswordReset: {
+          on: {
+            PASSWORD_RESET: 'passwordUpdated',
+            TIMEOUT: 'error'
+          }
+        },
+        passwordUpdated: {
+          on: {
+            CONTINUE: 'idle'
+          }
+        },
+        error: {
+          on: {
+            RETRY_PASSWORD_RESET: 'idle'
+          }
+        }
       }
     },
-    validatingEmail: {
-      on: {
-        EMAIL_VALID: 'sendingEmail',
-        EMAIL_INVALID: 'error'
-      }
-    },
-    sendingEmail: {
-      on: {
-        EMAIL_SENT: 'awaitingUserClick',
-        EMAIL_FAILED: 'error'
-      }
-    },
-    awaitingUserClick: {
-      on: {
-        TOKEN_CLICKED: 'validatingToken'
-      }
-    },
-    validatingToken: {
-      on: {
-        TOKEN_VALID: 'resettingPassword',
-        TOKEN_INVALID: 'error'
-      }
-    },
-    resettingPassword: {
-      on: {
-        PASSWORD_RESET: 'success',
-        PASSWORD_RESET_FAILED: 'error'
-      }
-    },
-    success: {
-      type: 'final'
-    },
-    error: {
-      on: {
-        RETRY: 'idle'
+    userIdRecovery: {
+      initial: 'idle',
+      states: {
+        idle: {
+          on: {
+            REQUEST_USER_ID_RECOVERY: 'validatingEmailForUserId'
+          }
+        },
+        validatingEmailForUserId: {
+          on: {
+            EMAIL_VALID: 'sendingOTP',
+            EMAIL_INVALID: 'error'
+          }
+        },
+        sendingOTP: {
+          on: {
+            OTP_SENT: 'awaitingOTPEntry',
+            OTP_SEND_FAILED: 'error'
+          }
+        },
+        awaitingOTPEntry: {
+          on: {
+            OTP_ENTERED: 'validatingOTP'
+          }
+        },
+        validatingOTP: {
+          on: {
+            OTP_VALID: 'displayingUserId',
+            OTP_INVALID: 'error'
+          }
+        },
+        displayingUserId: {
+          on: {
+            CONTINUE: 'idle'
+          }
+        },
+        error: {
+          on: {
+            RETRY_USER_ID_RECOVERY: 'idle'
+          }
+        }
       }
     }
   }
